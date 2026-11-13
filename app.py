@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 # ---------------------------------------------------------
-# CONFIGURAÇÃO DA PÁGINA & ESTILO EXECUTIVO
+# CONFIGURAÇÃO DA PÁGINA
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="OdontoPrime Paulista | Projeção de Fluxo de Caixa",
@@ -11,30 +11,133 @@ st.set_page_config(
     layout="wide",
 )
 
+# ---------------------------------------------------------
+# CSS PERSONALIZADO — IDENTIDADE VISUAL ODONTOPRIME PAULISTA
+# ---------------------------------------------------------
 st.markdown(
     """
     <style>
-    .main { background-color: #F4F6F9; }
-    .header-box {
-        background: linear-gradient(90deg, #1B365D 0%, #152B4B 100%);
-        padding: 20px 28px;
-        border-radius: 10px;
-        border-bottom: 4px solid #0D9488;
-        color: white;
-        margin-bottom: 18px;
+    /* Fundo geral da tela igual ao canvas do Power BI */
+    .stApp {
+        background-color: #F1F5F9;
     }
-    .header-title { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: 0.5px; }
-    .header-sub { font-size: 13px; color: #CBD5E1; margin-top: 4px; }
+    header[data-testid="stHeader"] {
+        background: transparent;
+    }
+    .block-container {
+        padding-top: 1.2rem;
+        padding-bottom: 1.5rem;
+        max-width: 1440px;
+    }
+
+    /* Cabeçalho Executivo Azul-Marinho */
+    .op-header {
+        background: linear-gradient(90deg, #1B365D 0%, #142947 100%);
+        padding: 18px 26px;
+        border-radius: 12px;
+        border-bottom: 4px solid #0D9488;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.10);
+        margin-bottom: 14px;
+    }
+    .op-brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .op-logo-badge {
+        background-color: #0D9488;
+        color: #FFFFFF;
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        font-weight: 900;
+        box-shadow: 0 2px 6px rgba(13, 148, 136, 0.4);
+    }
+    .op-title {
+        color: #FFFFFF;
+        font-size: 23px;
+        font-weight: 800;
+        letter-spacing: 0.6px;
+        margin: 0;
+        line-height: 1.15;
+    }
+    .op-subtitle {
+        color: #CBD5E1;
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+    /* Molduras brancas elevadas (Filtros, Gráficos e Matriz) */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: #FFFFFF !important;
+        border-radius: 12px !important;
+        border: 1px solid #E2E8F0 !important;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05) !important;
+        padding: 14px 18px !important;
+    }
+
+    /* Cartões KPI no padrão exato do Power BI */
     .kpi-card {
         background-color: #FFFFFF;
-        padding: 16px 18px;
-        border-radius: 10px;
-        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
-        border-top: 4px solid #1B365D;
+        padding: 16px 18px 18px 18px;
+        border-radius: 12px;
+        border: 1px solid #E2E8F0;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
         text-align: center;
+        height: 100%;
     }
-    .kpi-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
-    .kpi-value { font-size: 24px; font-weight: 800; margin-top: 6px; }
+    .kpi-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    .kpi-pill {
+        width: 22px;
+        height: 4px;
+        border-radius: 2px;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+    .kpi-title {
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        line-height: 1.2;
+    }
+    .kpi-value {
+        font-size: 26px;
+        font-weight: 800;
+        line-height: 1.2;
+    }
+
+    /* Abas de navegação estilizadas */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: transparent;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: #FFFFFF;
+        border-radius: 8px;
+        border: 1px solid #E2E8F0;
+        padding: 8px 18px;
+        font-weight: 600;
+        color: #1E293B;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #1B365D !important;
+        color: #FFFFFF !important;
+        border-color: #1B365D !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -62,27 +165,28 @@ def carregar_dados():
     d_pag = pd.read_excel(xls, "dFormasPagamento")
     d_saldo = pd.read_excel(xls, "dSaldoInicial")
 
-    # Padronização de chaves e junções
     df = f_lanc.merge(d_contas, on="ID_Conta", how="left")
     if "ID_Especialidade" in df.columns:
         df = df.merge(d_esp, on="ID_Especialidade", how="left")
     if "ID_Pagamento" in df.columns:
         df = df.merge(d_pag, on="ID_Pagamento", how="left")
     if "ID_Conta_Bancaria" in df.columns:
-        df = df.merge(d_saldo[["ID_Conta_Bancaria", "Banco", "Conta_Bancaria"]], on="ID_Conta_Bancaria", how="left")
+        df = df.merge(
+            d_saldo[["ID_Conta_Bancaria", "Banco", "Conta_Bancaria"]],
+            on="ID_Conta_Bancaria",
+            how="left",
+        )
 
-    # Coluna de data de vencimento / caixa
     col_data = next((c for c in ["Data_Vencimento", "Data_Caixa", "Data"] if c in df.columns), None)
     df["Data_Ref"] = pd.to_datetime(df[col_data], dayfirst=True)
     df["AnoMes"] = df["Data_Ref"].dt.to_period("M")
 
     meses_pt = {
         1: "jan", 2: "fev", 3: "mar", 4: "abr", 5: "mai", 6: "jun",
-        7: "jul", 8: "ago", 9: "set", 10: "out", 11: "nov", 12: "dez"
+        7: "jul", 8: "ago", 9: "set", 10: "out", 11: "nov", 12: "dez",
     }
     df["Mes_Ano"] = df["Data_Ref"].apply(lambda d: f"{meses_pt[d.month]}/{str(d.year)[2:]}")
 
-    # Valores Bruto, Líquido e MDR
     col_bruto = next((c for c in ["Valor_Bruto", "Valor"] if c in df.columns), None)
     col_liq = "Valor_Liquido" if "Valor_Liquido" in df.columns else col_bruto
 
@@ -97,39 +201,66 @@ def carregar_dados():
 df_raw, df_saldo = carregar_dados()
 
 # ---------------------------------------------------------
-# CABEÇALHO E BOTÃO DE DOWNLOAD DO .PBIX
+# CABEÇALHO EXECUTIVO + BOTÃO DOWNLOAD .PBIX
 # ---------------------------------------------------------
-col_head, col_btn = st.columns([3.2, 1])
-with col_head:
+col_h1, col_h2 = st.columns([3.5, 1])
+with col_h1:
     st.markdown(
         """
-        <div class="header-box">
-            <div class="header-title">🦷 ODONTOPRIME PAULISTA</div>
-            <div class="header-sub">Projeção de Fluxo de Caixa Executivo & Matriz Analítica • Horizonte: Mai/2026 a Abr/2027 • Data de Corte: 12/11/2026</div>
+        <div class="op-header">
+            <div class="op-brand">
+                <div class="op-logo-badge">+</div>
+                <div>
+                    <div class="op-title">ODONTOPRIME PAULISTA</div>
+                    <div class="op-subtitle">Projeção de Fluxo de Caixa Executivo • Horizonte: Mai/2026 a Abr/2027 • Data de Corte: 12/11/2026</div>
+                </div>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-with col_btn:
-    st.write("")
-    st.link_button("📥 Baixar Arquivo Power BI (.pbix)", LINK_DRIVE_PBIX, use_container_width=True, type="primary")
-    st.caption("Modelo completo com Star Schema, DAX e What-If no Google Drive.")
+with col_h2:
+    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+    st.link_button(
+        "📥 Baixar Arquivo Power BI (.pbix)",
+        LINK_DRIVE_PBIX,
+        use_container_width=True,
+        type="primary",
+    )
+    st.caption("Modelo completo (Star Schema & DAX) no Google Drive.")
 
 # ---------------------------------------------------------
-# BARRA DE FILTROS & SIMULADOR WHAT-IF
+# BARRA DE FILTROS & SIMULADOR WHAT-IF DENTRO DE CARD BRANCO
 # ---------------------------------------------------------
-f1, f2, f3, f4 = st.columns([1.1, 1.2, 1.1, 1.6])
+with st.container(border=True):
+    f1, f2, f3, f4 = st.columns([1.1, 1.2, 1.1, 1.6])
 
-bancos = ["Todos"] + sorted(df_saldo["Banco"].dropna().unique().tolist())
-banco_sel = f1.selectbox("Conta Bancária", bancos)
+    bancos = ["Todos"] + sorted(df_saldo["Banco"].dropna().unique().tolist())
+    banco_sel = f1.selectbox("CONTA BANCÁRIA", bancos)
 
-especialidades = ["Todas"] + sorted(df_raw["Especialidade"].dropna().unique().tolist()) if "Especialidade" in df_raw.columns else ["Todas"]
-esp_sel = f2.selectbox("Especialidade Clínica", especialidades)
+    especialidades = (
+        ["Todas"] + sorted(df_raw["Especialidade"].dropna().unique().tolist())
+        if "Especialidade" in df_raw.columns
+        else ["Todas"]
+    )
+    esp_sel = f2.selectbox("ESPECIALIDADE CLÍNICA", especialidades)
 
-status_lista = ["Todos"] + sorted(df_raw["Status"].dropna().unique().tolist()) if "Status" in df_raw.columns else ["Todos"]
-status_sel = f3.selectbox("Status Lançamento", status_lista)
+    status_lista = (
+        ["Todos"] + sorted(df_raw["Status"].dropna().unique().tolist())
+        if "Status" in df_raw.columns
+        else ["Todos"]
+    )
+    status_sel = f3.selectbox("STATUS LANÇAMENTO", status_lista)
 
-simulador_pct = f4.slider("Simulador de Receita Futura (%)", min_value=-30, max_value=30, value=0, step=1, format="%d%%")
+    simulador_pct = f4.slider(
+        "SIMULADOR RECEITA FUTURA (%)",
+        min_value=-30,
+        max_value=30,
+        value=0,
+        step=1,
+        format="%d%%",
+    )
+
 fator_sim = 1 + (simulador_pct / 100.0)
 
 # Aplicação dos filtros
@@ -148,20 +279,21 @@ if status_sel != "Todos" and "Status" in df.columns:
 
 saldo_inicial = saldo_ini_df["Saldo_Inicial"].sum()
 
-# Cálculo do Fluxo com Simulador What-If (aplica sobre Receitas Previstas)
+
 def calcular_fluxo_simulado(row):
     is_entrada = str(row.get("Natureza", "")).strip().lower() == "entrada"
     status = str(row.get("Status", "")).strip().lower()
     val = row["Vlr_Liquido"]
     if is_entrada:
-        if status == "previsto":
-            return val * fator_sim
-        return val
+        return val * fator_sim if status == "previsto" else val
     return -val
+
 
 df["Fluxo_Simulado"] = df.apply(calcular_fluxo_simulado, axis=1)
 
-# Indicadores Executivos (KPIs)
+# ---------------------------------------------------------
+# 5 CARTÕES EXECUTIVOS (KPIs)
+# ---------------------------------------------------------
 is_realizado = df["Status"].str.lower() == "realizado"
 is_previsto = df["Status"].str.lower() == "previsto"
 is_inadimplente = ~df["Status"].str.lower().isin(["realizado", "previsto"])
@@ -169,8 +301,12 @@ is_inadimplente = ~df["Status"].str.lower().isin(["realizado", "previsto"])
 saldo_em_caixa = saldo_inicial + df.loc[is_realizado, "Fluxo_Simulado"].sum()
 geracao_liquida_proj = df.loc[is_realizado | is_previsto, "Fluxo_Simulado"].sum()
 saldo_projetado_acum = saldo_inicial + geracao_liquida_proj
-inadimplencia = df.loc[is_inadimplente & (df["Natureza"].str.lower() == "entrada"), "Vlr_Bruto"].sum()
-custo_mdr = df.loc[(is_realizado | is_previsto) & (df["Natureza"].str.lower() == "entrada"), "Custo_MDR"].sum()
+inadimplencia = df.loc[
+    is_inadimplente & (df["Natureza"].str.lower() == "entrada"), "Vlr_Bruto"
+].sum()
+custo_mdr = df.loc[
+    (is_realizado | is_previsto) & (df["Natureza"].str.lower() == "entrada"), "Custo_MDR"
+].sum()
 
 k1, k2, k3, k4, k5 = st.columns(5)
 cards = [
@@ -183,25 +319,27 @@ cards = [
 for col, titulo, valor, cor in cards:
     col.markdown(
         f"""
-        <div class="kpi-card" style="border-top-color: {cor};">
-            <div class="kpi-title" style="color: {cor};">{titulo}</div>
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <span class="kpi-pill" style="background-color: {cor};"></span>
+                <span class="kpi-title" style="color: {cor};">{titulo}</span>
+            </div>
             <div class="kpi-value" style="color: {cor};">{valor}</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-st.write("")
+st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# ABAS (PÁGINA 1: VISÃO EXECUTIVA | PÁGINA 2: MATRIZ ANALÍTICA)
+# ABAS: VISÃO EXECUTIVA & MATRIZ ANALÍTICA
 # ---------------------------------------------------------
-tab1, tab2 = st.tabs(["📊 Visão Executiva", "📑 Matriz Analítica (Fluxo Direto)"])
+tab1, tab2 = st.tabs(["📊 Visão Executiva", "📑 Matriz Analítica (Demonstrativo Direto)"])
 
 with tab1:
     c_left, c_right = st.columns([1.45, 1])
 
-    # Gráfico 1: Fluxo de Caixa Mensal e Evolução do Saldo
     df_valid = df[is_realizado | is_previsto].copy()
     meses_ord = (
         df_valid[["AnoMes", "Mes_Ano"]]
@@ -226,105 +364,151 @@ with tab1:
         sai_prev.append(sp)
         saldo_acum_lista.append(acum)
 
-    fig_combo = go.Figure()
-    x_labels = meses_ord["Mes_Ano"].tolist()
+    # Moldura Branca 1: Fluxo de Caixa Mensal e Evolução do Saldo
+    with c_left:
+        with st.container(border=True):
+            fig_combo = go.Figure()
+            x_labels = meses_ord["Mes_Ano"].tolist()
 
-    fig_combo.add_trace(go.Bar(name="Entradas Realizadas", x=x_labels, y=ent_real, marker_color="#0D9488"))
-    fig_combo.add_trace(go.Bar(name="Entradas Previstas", x=x_labels, y=ent_prev, marker_color="#5EEAD4"))
-    fig_combo.add_trace(go.Bar(name="Saídas Realizadas", x=x_labels, y=sai_real, marker_color="#E11D48"))
-    fig_combo.add_trace(go.Bar(name="Saídas Previstas", x=x_labels, y=sai_prev, marker_color="#FDA4AF"))
-    fig_combo.add_trace(
-        go.Scatter(
-            name="Saldo Projetado Acumulado",
-            x=x_labels,
-            y=saldo_acum_lista,
-            mode="lines+markers",
-            line=dict(color="#1B365D", width=3),
-            marker=dict(size=6),
-        )
-    )
-    fig_combo.update_layout(
-        title="Fluxo de Caixa Mensal e Evolução do Saldo",
-        barmode="relative",
-        template="plotly_white",
-        height=430,
-        legend=dict(orientation="h", yanchor="bottom", y=-0.28, xanchor="center", x=0.5),
-        margin=dict(l=20, r=20, t=45, b=60),
-    )
-    c_left.plotly_chart(fig_combo, use_container_width=True)
+            fig_combo.add_trace(go.Bar(name="Entradas Realizadas", x=x_labels, y=ent_real, marker_color="#0D9488"))
+            fig_combo.add_trace(go.Bar(name="Entradas Previstas", x=x_labels, y=ent_prev, marker_color="#5EEAD4"))
+            fig_combo.add_trace(go.Bar(name="Saídas Realizadas (Negativo)", x=x_labels, y=sai_real, marker_color="#E11D48"))
+            fig_combo.add_trace(go.Bar(name="Saídas Previstas (Negativo)", x=x_labels, y=sai_prev, marker_color="#FDA4AF"))
+            fig_combo.add_trace(
+                go.Scatter(
+                    name="Saldo Projetado Acumulado",
+                    x=x_labels,
+                    y=saldo_acum_lista,
+                    mode="lines+markers",
+                    line=dict(color="#1B365D", width=3),
+                    marker=dict(size=6, color="#1B365D"),
+                )
+            )
+            fig_combo.update_layout(
+                title=dict(
+                    text="<b>Fluxo de Caixa Mensal e Evolução do Saldo</b>",
+                    font=dict(size=15, color="#1E293B"),
+                ),
+                barmode="relative",
+                plot_bgcolor="#FFFFFF",
+                paper_bgcolor="#FFFFFF",
+                separators=",.",
+                yaxis=dict(
+                    tickprefix="R$ ",
+                    tickformat=",.0f",
+                    gridcolor="#F1F5F9",
+                    zerolinecolor="#CBD5E1",
+                    font=dict(color="#475569"),
+                ),
+                xaxis=dict(font=dict(color="#475569")),
+                height=440,
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=-0.30,
+                    xanchor="center",
+                    x=0.5,
+                    font=dict(size=11, color="#334155"),
+                ),
+                margin=dict(l=15, r=15, t=45, b=70),
+            )
+            st.plotly_chart(fig_combo, use_container_width=True)
 
-    # Gráfico 2: Ponte de Geração de Caixa (Waterfall)
-    wf_df = (
-        df_valid.groupby("Grupo_Fluxo", as_index=False)["Fluxo_Simulado"]
-        .sum()
-        .sort_values("Fluxo_Simulado", ascending=False)
-    )
-    x_wf = wf_df["Grupo_Fluxo"].tolist() + ["Total"]
-    y_wf = wf_df["Fluxo_Simulado"].tolist() + [0]
-    measures = ["relative"] * len(wf_df) + ["total"]
+    # Moldura Branca 2: Ponte de Geração de Caixa (Waterfall)
+    with c_right:
+        with st.container(border=True):
+            wf_df = (
+                df_valid.groupby("Grupo_Fluxo", as_index=False)["Fluxo_Simulado"]
+                .sum()
+                .sort_values("Fluxo_Simulado", ascending=False)
+            )
+            x_wf = wf_df["Grupo_Fluxo"].tolist() + ["Total"]
+            y_wf = wf_df["Fluxo_Simulado"].tolist() + [0]
+            measures = ["relative"] * len(wf_df) + ["total"]
 
-    fig_wf = go.Figure(
-        go.Waterfall(
-            orientation="v",
-            measure=measures,
-            x=x_wf,
-            y=y_wf,
-            increasing=dict(marker=dict(color="#0D9488")),
-            decreasing=dict(marker=dict(color="#E11D48")),
-            totals=dict(marker=dict(color="#1B365D")),
-            connector=dict(line=dict(color="#CBD5E1")),
-        )
-    )
-    fig_wf.update_layout(
-        title="Ponte de Geração de Caixa (12 Meses)",
-        template="plotly_white",
-        height=430,
-        margin=dict(l=20, r=20, t=45, b=60),
-    )
-    c_right.plotly_chart(fig_wf, use_container_width=True)
+            fig_wf = go.Figure(
+                go.Waterfall(
+                    orientation="v",
+                    measure=measures,
+                    x=x_wf,
+                    y=y_wf,
+                    increasing=dict(marker=dict(color="#0D9488")),
+                    decreasing=dict(marker=dict(color="#E11D48")),
+                    totals=dict(marker=dict(color="#1B365D")),
+                    connector=dict(line=dict(color="#CBD5E1", width=1.2)),
+                )
+            )
+            fig_wf.update_layout(
+                title=dict(
+                    text="<b>Ponte de Geração de Caixa (12 Meses)</b>",
+                    font=dict(size=15, color="#1E293B"),
+                ),
+                plot_bgcolor="#FFFFFF",
+                paper_bgcolor="#FFFFFF",
+                separators=",.",
+                yaxis=dict(
+                    tickprefix="R$ ",
+                    tickformat=",.0f",
+                    gridcolor="#F1F5F9",
+                    zerolinecolor="#CBD5E1",
+                    font=dict(color="#475569"),
+                ),
+                xaxis=dict(tickangle=-25, font=dict(size=11, color="#475569")),
+                height=440,
+                margin=dict(l=15, r=15, t=45, b=70),
+            )
+            st.plotly_chart(fig_wf, use_container_width=True)
 
 with tab2:
-    st.subheader("Demonstrativo de Fluxo de Caixa Direto (Mensal por Especialidade)")
-    nivel = st.radio(
-        "Nível de detalhamento da matriz:",
-        ["Grupo de Fluxo", "Grupo + Categoria", "Completo (Grupo + Categoria + Subcategoria)"],
-        horizontal=True,
-    )
+    with st.container(border=True):
+        st.markdown("#### Demonstrativo de Fluxo de Caixa Direto & Especialidades")
+        nivel = st.radio(
+            "Nível de abertura da matriz:",
+            ["Grupo de Fluxo", "Grupo + Categoria", "Completo (Grupo + Categoria + Subcategoria)"],
+            horizontal=True,
+        )
 
-    if nivel == "Grupo de Fluxo":
-        idx_cols = ["Grupo_Fluxo"]
-    elif nivel == "Grupo + Categoria":
-        idx_cols = ["Grupo_Fluxo", "Categoria"]
-    else:
-        idx_cols = ["Grupo_Fluxo", "Categoria", "Subcategoria"]
+        if nivel == "Grupo de Fluxo":
+            idx_cols = ["Grupo_Fluxo"]
+        elif nivel == "Grupo + Categoria":
+            idx_cols = ["Grupo_Fluxo", "Categoria"]
+        else:
+            idx_cols = ["Grupo_Fluxo", "Categoria", "Subcategoria"]
 
-    piv = pd.pivot_table(
-        df_valid,
-        values="Fluxo_Simulado",
-        index=idx_cols,
-        columns="Mes_Ano",
-        aggfunc="sum",
-        fill_value=0.0,
-    )
+        piv = pd.pivot_table(
+            df_valid,
+            values="Fluxo_Simulado",
+            index=idx_cols,
+            columns="Mes_Ano",
+            aggfunc="sum",
+            fill_value=0.0,
+        )
 
-    cols_ordenadas = [m for m in meses_ord["Mes_Ano"].tolist() if m in piv.columns]
-    piv = piv[cols_ordenadas]
-    piv["Total"] = piv.sum(axis=1)
+        cols_ordenadas = [m for m in meses_ord["Mes_Ano"].tolist() if m in piv.columns]
+        piv = piv[cols_ordenadas]
+        piv["Total"] = piv.sum(axis=1)
 
-    # Linha de Geração Líquida Total
-    total_row = pd.DataFrame([piv.sum(axis=0)], index=pd.MultiIndex.from_tuples([tuple(["GERAÇÃO LÍQUIDA (R$)"] + [""] * (len(idx_cols) - 1))], names=idx_cols) if len(idx_cols) > 1 else pd.Index(["GERAÇÃO LÍQUIDA (R$)"], name=idx_cols[0]))
-    piv_final = pd.concat([piv, total_row])
+        total_idx = (
+            pd.MultiIndex.from_tuples(
+                [tuple(["GERAÇÃO LÍQUIDA (R$)"] + [""] * (len(idx_cols) - 1))],
+                names=idx_cols,
+            )
+            if len(idx_cols) > 1
+            else pd.Index(["GERAÇÃO LÍQUIDA (R$)"], name=idx_cols[0])
+        )
+        total_row = pd.DataFrame([piv.sum(axis=0)], index=total_idx)
+        piv_final = pd.concat([piv, total_row])
 
-    def cor_condicional(val):
-        if isinstance(val, (int, float)):
-            if val < 0:
-                return "color: #E11D48; font-weight: 600;"
-            elif val > 0:
-                return "color: #0D9488; font-weight: 600;"
-        return ""
+        def cor_condicional(val):
+            if isinstance(val, (int, float)):
+                if val < 0:
+                    return "color: #E11D48; font-weight: 600;"
+                elif val > 0:
+                    return "color: #0D9488; font-weight: 600;"
+            return ""
 
-    st.dataframe(
-        piv_final.style.format(fmt_brl).map(cor_condicional),
-        use_container_width=True,
-        height=480,
-    )
+        st.dataframe(
+            piv_final.style.format(fmt_brl).map(cor_condicional),
+            use_container_width=True,
+            height=480,
+        )
