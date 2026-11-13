@@ -17,7 +17,6 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Fundo geral da tela igual ao canvas do Power BI */
     .stApp {
         background-color: #F1F5F9;
     }
@@ -83,15 +82,18 @@ st.markdown(
         padding: 14px 18px !important;
     }
 
-    /* Cartões KPI no padrão exato do Power BI */
+    /* Cartões KPI com altura uniforme */
     .kpi-card {
         background-color: #FFFFFF;
-        padding: 16px 18px 18px 18px;
+        padding: 14px 16px;
         border-radius: 12px;
         border: 1px solid #E2E8F0;
         box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
         text-align: center;
-        height: 100%;
+        min-height: 112px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
     .kpi-header {
         display: flex;
@@ -115,7 +117,7 @@ st.markdown(
         line-height: 1.2;
     }
     .kpi-value {
-        font-size: 26px;
+        font-size: 25px;
         font-weight: 800;
         line-height: 1.2;
     }
@@ -398,9 +400,9 @@ with tab1:
                     tickformat=",.0f",
                     gridcolor="#F1F5F9",
                     zerolinecolor="#CBD5E1",
-                    font=dict(color="#475569"),
+                    tickfont=dict(color="#475569"),
                 ),
-                xaxis=dict(font=dict(color="#475569")),
+                xaxis=dict(tickfont=dict(color="#475569")),
                 height=440,
                 legend=dict(
                     orientation="h",
@@ -451,9 +453,9 @@ with tab1:
                     tickformat=",.0f",
                     gridcolor="#F1F5F9",
                     zerolinecolor="#CBD5E1",
-                    font=dict(color="#475569"),
+                    tickfont=dict(color="#475569"),
                 ),
-                xaxis=dict(tickangle=-25, font=dict(size=11, color="#475569")),
+                xaxis=dict(tickangle=-25, tickfont=dict(size=11, color="#475569")),
                 height=440,
                 margin=dict(l=15, r=15, t=45, b=70),
             )
